@@ -2,8 +2,17 @@ import random
 import sys
 # Global variables
 balance = 0
-pin = random.randint(1000, 9999)
+new_pin = random.randint(1000, 9999)
+account_data = 'account_data.txt'
 
+# Load account data from file
+def load_data():
+    account_record = []
+    with open (account_data, 'r') as f:
+        for line in f:
+            account_record.append(line.strip().split(','))
+    return account_record
+    
 # Account creator function
 def create_account():
     print('Account Creator')
@@ -35,17 +44,30 @@ def create_account():
 {card_type}
 -------------------------------------------------''')
     print(f'Your current balance is £{balance}, use the ATM to withdraw or deposit money')
-    print(f'Your PIN is {pin}, use this to access your account')
+    print(f'Your PIN is {new_pin}, use this to access your account')
+        # Save user information to file
+    with open(account_data, 'a') as f:
+         f.write(f'{user_name},{card_type},{validation_date},{expiry_date},{bank_name},{"".join(map(str, card_number))},{"".join(map(str, sort_code))},{"".join(map(str, account_number))},{balance},{new_pin}\n')
 
 # ATM function
 def ATM():
     global balance
-    global pin
+    global new_pin
     pincheck = True
+    account_record = load_data()
     # Verifying correct PIN is inputted
     while pincheck:
+        found = False
+        record_number = 0
         pin_input = int(input('Enter PIN > '))
-        if pin_input != pin:
+        for user in account_record: # Iterating through the account record array
+            if str(pin_input) == user[-1]: # Checking pin inputted against every pin in file
+                found = True
+                balance = int(user[-2]) # Updating balance with value from file
+            if found:
+                break
+            record_number +=1 # Taking down the record of the account accessed so the balance can be correctly overwritten
+        if not found:
             print('Incorrect PIN try again')
         else:
             pincheck = False
@@ -60,8 +82,10 @@ def ATM():
     [3] Deposit Cash
     [4] Exit
     > ''')
+                # Balance output
                 if opt2 == '1':
                     print(f'Current balance: £{balance}')
+                # Withdraw cash
                 if opt2 == '2':
                     withdraw = int(input('Enter the amounnt you would like to withdraw > £'))
                     while withdraw > balance:
@@ -69,10 +93,24 @@ def ATM():
                     else:
                         balance -= withdraw
                         print(f'Your new balance is £{balance}, thank you for using UKBank')
+                        # Update balance in account record array
+                        account_record[record_number][-2] = str(balance)
+                        # Update balance in account data file
+                        with open(account_data, 'w') as f:
+                            for account in account_record:
+                                f.write(','.join(account) + '\n')
+                # Deposit cash
                 if opt2 == '3':
                     deposit = int(input('Enter an amount to deposit > £'))
                     balance += deposit
                     print(f'Your new balance is £{balance}, thank you for using UKBank')
+                    # Update balance in account record array
+                    account_record[record_number][-2] = str(balance)
+                    # Update balance in account data file
+                    with open(account_data, 'w') as f:
+                        for account in account_record:
+                            f.write(','.join(account) + '\n')
+                # Exit
                 if opt2 == '4':
                     atm = False
                     menu()
